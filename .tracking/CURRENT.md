@@ -1,12 +1,16 @@
 # PKA — CURRENT
 
 ## Status
-Project tracking system migration in progress. All team systems operational.
+.tracking/ system LIVE across all 5 repos. All specs migrated. PKA GitHub repo created (private).
 
 ## Active Work
-- **Kit:** Implementing new .tracking/ system across all project repos
+- **The Machine:** Live on SOL-29MAY26-CDE, grid cycling, $950 equity
+- **VEOE:** Screener operational (Alpaca), no trades (Tradier sandbox issue)
+
+## Blockers
+- VEOE: Tradier paper sandbox not returning options quotes (since 2026-04-09)
 
 ## Next
-1. Complete .tracking/ migration for all 5 project repos
-2. Create private PKA GitHub repo
-3. Add tracking rules to CLAUDE.md
+1. Set up PostToolUse hook for 15-min auto-checkpoints
+2. Monitor .tracking/ system in practice over next week
+3. Resume project work (AllTec deploy, Machine monitoring, VEOE fix)
