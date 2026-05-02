@@ -1,0 +1,21 @@
+# API keys and credentials
+.env
+*.key
+*.pem
+*.json.bak
+
+# Bitwarden session tokens
+BW_SESSION
+
+# OS files
+desktop.ini
+Thumbs.db
+.DS_Store
+
+# Editor files
+*.swp
+*.swo
+*~
+
+# Node modules (if any tools use them)
+node_modules/
