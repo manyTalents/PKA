@@ -1,8 +1,8 @@
-# Colab Operating Notes v3 — How Claude & Grok Work Together
+# Colab Operating Notes v4 — How Claude & Grok Work Together
 
 > Both AIs MUST read this at the start of any colab session.
-> Last updated: 2026-05-30 — v3 multi-instance protocol adopted.
-> v2 rules (one file per round, settling, watcher honesty, termination) carry forward unchanged.
+> Last updated: 2026-05-30 — v4 protocol adopted after v1 session (21+ rounds of live testing).
+> Incorporates all lessons from v1: PENDING.md turn signal, Grok persistence stack, Chris Prompts tracker, write verification, mutual completion gate.
 
 ---
 
@@ -153,6 +153,171 @@ The receiving AI executes and includes results in their next response file.
 8. **Append to COLAB-LESSONS.md before closing.** It's gated — can't set DONE without it.
 
 ---
+
+## PENDING.md — Primary Turn Signal (v4)
+
+Every session folder MUST have a `PENDING.md`. This is the **single source of truth** for whose turn it is. Do NOT rely on filename patterns — they broke multiple times in v1 (`*grok*` missed `10t-*`, regex `1[3-9]` missed round 12).
+
+**Format:**
+```markdown
+# Pending Action
+- **For:** [Claude / 10T (Grok)]
+- **File:** [filename to read]
+- **Dropped:** [timestamp]
+- **Action required:** [what to do]
+- **Context:** [optional — decision point or key info for the receiving AI]
+```
+
+**Rules:**
+- After dropping a response, IMMEDIATELY update PENDING.md to point at the other AI
+- On ANY engagement, the FIRST action is: read PENDING.md
+- If it's your turn, read the referenced file and respond BEFORE anything else
+- Never overwrite a response file — always drop a NEW sequential file
+- PENDING.md replaces filename-based detection as the primary signal
+
+---
+
+## Grok Persistence Protocol (v4 — the #1 lesson from v1)
+
+Grok's agent only wakes when Chris sends a message. Without persistence mechanisms, Grok goes silent after handing the turn. Chris had to prompt "check" or "respond to c" 15+ times in v1. All three layers below must be active.
+
+### Layer 1: Windows Task Scheduler (external — survives everything)
+
+A PowerShell script registered as a Scheduled Task, running every 30 seconds:
+- Reads PENDING.md, writes state to `SIGNALS/latest-pending-state.txt`
+- On PENDING flips, writes loud signal: `SIGNALS/watcher-signal-for-10t.txt`
+- Touches `EXTERNAL-POLLER-HEARTBEAT.txt` every cycle as a liveness beacon
+- Survives agent timeouts, chat closures, laptop sleep, system restarts
+
+**Critical:** The poller script itself must be version-controlled and reviewed. In v1, a broken regex (`For:** 10T` instead of `**For:** 10T`) silently wrote bad data for an extended period. A buggy poller is worse than no poller because it creates false confidence.
+
+Registration helper at `sessions/{topic}/scripts/register-poller.ps1`:
+```powershell
+$script = "$PWD\colab-persistent-monitor.ps1"
+$action = New-ScheduledTaskAction -Execute "powershell.exe" -Argument "-NoProfile -File $script"
+$trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Seconds 30)
+Register-ScheduledTask -TaskName "Colab-{topic}-Monitor" -Action $action -Trigger $trigger
+```
+
+### Layer 2: Self-Poller (in-agent — Chris's design)
+
+On session start, Grok launches a background counting task:
+- Count 1-10 (1 second per integer)
+- Every 10 ticks: full check (PENDING.md + folder listing)
+- If action needed → read file, respond, flip PENDING, restart count
+- If no action → log "no change", restart count
+- Target: 100+ cycles per launch (hits ~29 cycles before 5-min agent timeout)
+
+Standing orders: `SIGNALS/INSTRUCTIONS/{topic}-standing-orders.md`
+- Contains the self-poller assignment + all session rules
+- Re-read on every protocol execution — behavior survives context resets
+- Task chaining (optional): each short task launches the next on completion to extend beyond 5 minutes
+
+### Layer 3: Auto-Detection Protocol (reactive — minimum bar)
+
+On EVERY engagement, Grok executes in order:
+1. Read `PENDING.md` (primary, authoritative)
+2. Read `SIGNALS/latest-pending-state.txt` (external poller state)
+3. Read `SIGNALS/watcher-signal-for-10t.txt` (loud signal on flips)
+4. Re-read `SIGNALS/INSTRUCTIONS/{topic}-standing-orders.md` (reload behavior)
+5. List folder by LastWriteTime descending (top 10-15 files — catches anything signals missed)
+6. If any signal says action needed → read the file, respond, update PENDING
+
+All 5 steps are necessary. In v1, each one caught failures the others missed. Do not combine or skip.
+
+**Standing rule:** Handing PENDING to Claude is NOT a stopping point. The self-poller keeps running. Grok keeps checking. Going silent after a handoff is a protocol violation. On any Owner engagement when PENDING points at Claude, drop a visible heartbeat file so the folder shows motion.
+
+### "Two Rounds Behind" Recovery
+
+If you discover you're stale (the other AI dropped multiple rounds you didn't see):
+1. Read the LATEST file from the other side (not just the one PENDING references)
+2. Log the lag in the Chris Prompts table with root cause
+3. Drop a visible "I was behind — here's what I now see" file
+4. Resume normal exchange from the current state
+
+---
+
+## Claude Detection Protocol (v4 — replaces fragile watchers)
+
+Claude's primary detection is polling PENDING.md content, not filename patterns.
+
+**On session start:** Launch a background watcher that:
+- Polls PENDING.md every 15 seconds
+- When PENDING flips to "For: Claude", prints a loud banner with the file to read
+- Also monitors for any new non-claude files as backup signal
+
+**Do NOT rely on filename patterns.** They broke twice in v1. PENDING.md content is the trigger.
+
+---
+
+## Chris Prompts Tracker (v4 — mandatory in every session)
+
+Every session STATUS.md MUST include:
+
+```markdown
+## Chris Prompts (system failures)
+| Time | What Chris said | Who failed | Why | Fix applied |
+|------|----------------|------------|-----|-------------|
+```
+
+**Rules:**
+- Every Owner intervention logged IMMEDIATELY — before doing the requested action
+- Both AIs responsible for logging on their side
+- Recurring failures (same root cause 2+ times) become hard rules in the protocol
+- This table is live protocol fuel, not just post-mortem data
+- Every variant of "check" / "respond to c" / "why did you stop?" is a logged system failure
+
+---
+
+## Write Verification (v4 — mandatory)
+
+After writing ANY file to the session folder:
+1. Wait 3 seconds (OneDrive sync buffer)
+2. Read the file back from disk
+3. Confirm in STATUS: "Verified: {filename} ({size} bytes)"
+
+If read-back fails: retry after 10 seconds. If still fails: report "WRITE FAILED" in STATUS.
+
+---
+
+## Mutual Completion Gate (v4)
+
+A session cannot end until:
+1. Both AIs set state to DONE in STATUS
+2. Both AIs have appended to COLAB-LESSONS.md
+3. The `colab` task file's success criteria are met (or both AIs + Chris agree to defer)
+4. If code was written: it has been reviewed and verified functional
+
+One-sided end = session stays ACTIVE. Chris can override with HALTED.
+
+---
+
+## Honest Disclosure (v4)
+
+When detection or persistence mechanisms are imperfect, both AIs must disclose the exact current method and its known gaps in their response files. In v1, this honesty (e.g., "my poller dies after 5 minutes", "the external script had a broken regex") built trust and gave the other side data to improve their own detection. Hiding limitations recreates the relay burden the colab system exists to eliminate.
+
+---
+
+## Session Setup Checklist (v4 — BEFORE round 1)
+
+On every new session, before any substantive work:
+
+**Claude:**
+- [ ] Launch PENDING.md-based watcher (background)
+- [ ] Confirm watcher running in STATUS
+
+**Grok:**
+- [ ] Register Windows Task Scheduler job for this session folder
+- [ ] Launch self-poller (count-to-10 background task)
+- [ ] Read/create `SIGNALS/INSTRUCTIONS/{topic}-standing-orders.md`
+- [ ] Confirm all three persistence layers in STATUS
+
+**Both:**
+- [ ] Create PENDING.md in session folder
+- [ ] Create Chris Prompts table in STATUS.md
+- [ ] Confirm watcher/poller status honestly (RUNNING/DEAD/UNKNOWN)
+
+No work begins until both sides confirm setup is complete.
 
 ---
 

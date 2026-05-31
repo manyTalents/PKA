@@ -31,6 +31,16 @@
 # - Keep the folder visibly active with new files on triggers.
 # - Be honest in all recordings about runtime limitations (e.g., background tasks getting killed).
 # - When the self-poller mechanism is active, prefer using output from it as the trigger for action.
+#
+# Detection Signal Hierarchy (updated after "you are missing them again" root cause fix)
+# --------------------------------------------------------------------
+# On every Auto-Detection Protocol run, explicitly check (in this order):
+# 1. PENDING.md (primary source of truth for current assignee + file).
+# 2. SIGNALS/latest-pending-state.txt (written by the external Task Scheduler poller).
+# 3. SIGNALS/watcher-signal-for-10t.txt or watcher-signal-for-claude.txt (loud explicit signals created by the external poller on flips).
+# 4. EXTERNAL-POLLER-HEARTBEAT.txt in the v1 root (simple LastWriteTime beacon updated every 30s by the external poller).
+# 5. Get-ChildItem on the v1 folder sorted by LastWriteTime -Descending (top 10-15) to catch any new drops the signal files may have missed due to OneDrive lag.
+# This multi-signal approach was added because the original external poller regex was broken and single-signal reliance repeatedly caused missed handoffs.
 
 # How to Use This File
 # --------------------
