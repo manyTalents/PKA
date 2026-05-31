@@ -1,5 +1,0 @@
-10Tc 10Tg, design and review the field invoice + payment collection system for AllTec.
-Spec at: AllTecPro/hcp_replacement/.tracking/specs/2026-05-30-field-invoice-payment-design.md
-Key topic: Louisiana CC surcharge rules — research is in Owner's Inbox.
-Focus on: invoice generation flow, payment method architecture, receipt delivery, compliance.
-Push each other. Find gaps in the spec. Propose improvements.
