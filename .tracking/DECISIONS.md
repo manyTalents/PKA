@@ -195,3 +195,19 @@
 **Members:** Kit
 
 ---
+
+---
+
+### 2026-05-30 — VEOE exit optimization: 60% profit target + time-aware trail
+**Context:** VEOE had 45% WR but trail stops cut winners short (22 of 50 trades). Parameter sweep of 10 configs found 60% profit target = +255% P&L ($967→$3,431).
+**Decision:** Deploy 60% profit target + 25% early trail (first 2 days) + 8% late trail (near expiry) to live VEOE (paper).
+**Rationale:** Biggest single improvement from exit changes alone. Compression entry engine is sound (0.73x avg IV). Catalyst gate tested but rejected (non-catalyst trades outperformed).
+**Members:** Claude, Grok (colab), Chris (approved deploy)
+
+---
+
+### 2026-05-30 — Machine distress fix: $5 min loss + 2h cooldown
+**Context:** 9 distress_close exits at avg -$1.58 = -$14.20 wasted on tiny dips. Grid needs tight margin to function — 10% BP threshold was normal operation, not distress.
+**Decision:** Deploy $5 min unrealized loss gate + 2h cooldown between distress events. Prevents cascade.
+**Rationale:** Surgical fix that filters noise ($0.55-$3 dips) without touching grid logic. Stop-loss + kill switch remain as final backstops.
+**Members:** Claude, Grok (colab), Chris (approved restart — RED)
