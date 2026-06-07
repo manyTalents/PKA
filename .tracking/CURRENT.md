@@ -22,16 +22,18 @@ MTP Prep app: INTERNAL TESTING LIVE on Google Play (2026-06-04). 14-day testing 
   - Build: https://expo.dev/accounts/manytalentsmore/projects/many-talents-manager/builds/ea0abe57-67c2-4bae-aac8-76d641dabbd3
   - Preview: https://expo.dev/accounts/manytalentsmore/projects/many-talents-manager/builds/9f3b2d07-7c7e-427c-8c2e-52a94a13461c
 - **MTM Website:** Pointed at self-hosted (erp.manytalentsmore.com). New API creds in BW. Magic links need MTM Invite doctype migration.
-- **The Machine V2 — 6 FIXES DEPLOYED (2026-06-07):** Paper mode, $900 equity. Regime=trending (ADX 70), swing trader active, grid pauses during trends by design.
+- **The Machine V2 — 8 FIXES DEPLOYED (2026-06-07):** Paper mode, **$1,088.64 equity** (+$188.64 swing win). Regime=trending (ADX 63), grid pauses during trends, swing trader captures.
+  - **Swing trade #1:** LONG 4 ETH @ $1,572 → TP $1,634.88 (+$188.64 credited at 75% expected)
   - **Fix 1:** `rebuild_all` deferred — sets `_rebuild_pending` flag, no longer clears grid during trending
   - **Fix 2:** `adopt_exchange_state` rebuild handler — cancels orders + resets spacing/center
   - **Fix 3:** `close_instrument` guard — skips when grid empty (saves ~5,760 API calls/day)
   - **Fix 4:** `build()` capacity-aware — queries margin gate before sizing levels (was 1 level, now 4)
   - **Fix 5:** Margin gate rejection logging — build() now logs WHY orders are blocked
-  - **Fix 6:** Flex allocation — minimums-first budgeting replaces fixed tier caps. Dynamic `set_instrument_cap` on margin gate. 1 instrument gets full $720; multi-instrument splits by min+weight.
+  - **Fix 6:** Flex allocation — minimums-first budgeting replaces fixed tier caps. Dynamic `set_instrument_cap` on margin gate. 1 instrument gets full $871; multi-instrument splits by min+weight.
+  - **Fix 7:** Swing trader DB persistence — `swing_trades` table, survives restarts
+  - **Fix 8:** Swing recovery on startup — paper reads DB, live reads exchange API (source of truth)
   - Sniper: SOL front-month rolling to SOL-26JUN26-CDE (within roll window)
   - Kill switches: 5 independent safety gates every 30s, all green
-  - Perps 403 bug: no 403s in logs, not confirmed fixed
   - **NOTE:** Local code (`the-machine/src/`) is STALE — deployed code on droplet is authoritative
 - **VEOE — MAJOR HARDENING SESSION (2026-06-03 → 06-06):** Paper trading, 4 open positions, $3,704 balance.
   - **Rule A deployed (06-04):** Confirmed breakouts bypass timing window. EXE confirmed at 16:00 CT, entered, hit +122% profit target ($+880). Fix paid for itself day one.
