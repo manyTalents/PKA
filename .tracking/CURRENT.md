@@ -22,7 +22,7 @@ MTP Prep app: INTERNAL TESTING LIVE on Google Play (2026-06-04). 14-day testing 
   - Build: https://expo.dev/accounts/manytalentsmore/projects/many-talents-manager/builds/ea0abe57-67c2-4bae-aac8-76d641dabbd3
   - Preview: https://expo.dev/accounts/manytalentsmore/projects/many-talents-manager/builds/9f3b2d07-7c7e-427c-8c2e-52a94a13461c
 - **MTM Website:** Pointed at self-hosted (erp.manytalentsmore.com). New API creds in BW. Magic links need MTM Invite doctype migration.
-- **The Machine V2 — 8 FIXES DEPLOYED (2026-06-07):** Paper mode, **$1,088.64 equity** (+$188.64 swing win). Regime=trending (ADX 63), grid pauses during trends, swing trader captures.
+- **The Machine V2 — 9 FIXES DEPLOYED (2026-06-07):** Paper mode, **$1,088.64 equity** (+$188.64 swing win). Regime now RANGING — grid active 6 levels @ $1,624.
   - **Swing trade #1:** LONG 4 ETH @ $1,572 → TP $1,634.88 (+$188.64 credited at 75% expected)
   - **Fix 1:** `rebuild_all` deferred — sets `_rebuild_pending` flag, no longer clears grid during trending
   - **Fix 2:** `adopt_exchange_state` rebuild handler — cancels orders + resets spacing/center
@@ -32,6 +32,7 @@ MTP Prep app: INTERNAL TESTING LIVE on Google Play (2026-06-04). 14-day testing 
   - **Fix 6:** Flex allocation — minimums-first budgeting replaces fixed tier caps. Dynamic `set_instrument_cap` on margin gate. 1 instrument gets full $871; multi-instrument splits by min+weight.
   - **Fix 7:** Swing trader DB persistence — `swing_trades` table, survives restarts
   - **Fix 8:** Swing recovery on startup — paper reads DB, live reads exchange API (source of truth)
+  - **Fix 9:** Swing trader dynamic instrument — trades whatever the scanner picks + regime says trending (was hardcoded ETH). Backtest shows LTC/SOL outperform ETH for swing.
   - Sniper: SOL front-month rolling to SOL-26JUN26-CDE (within roll window)
   - Kill switches: 5 independent safety gates every 30s, all green
   - **NOTE:** Local code (`the-machine/src/`) is STALE — deployed code on droplet is authoritative
